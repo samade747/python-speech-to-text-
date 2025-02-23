@@ -2,12 +2,8 @@ import streamlit as st
 import speech_recognition as sr
 from gtts import gTTS
 from pydub import AudioSegment
-from pydub.playback import play
 import tempfile
 import os
-
-# Tell pydub where to find FFmpeg
-AudioSegment.converter = "/usr/bin/ffmpeg"
 
 # Initialize recognizer
 recognizer = sr.Recognizer()
@@ -15,24 +11,39 @@ recognizer = sr.Recognizer()
 # Function to convert text to speech
 def text_to_speech(text):
     tts = gTTS(text=text, lang="en")
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
-        tts.save(fp.name)
-        audio = AudioSegment.from_file(fp.name, format="mp3")
-        play(audio)
-        os.unlink(fp.name)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
+        tts.save(temp_audio.name)
+        st.audio(temp_audio.name, format="audio/mp3")
+        os.unlink(temp_audio.name)
 
 # Streamlit UI
-st.title("🎤 Speech to Text Converter (Upload Audio)")
+st.title("🎤 Speech-to-Text Converter (Google API)")
 
-# File uploader
-uploaded_file = st.file_uploader("Upload an audio file (MP3, WAV)", type=["mp3", "wav"])
+# Microphone recording
+if st.button("🎙️ Start Recording"):
+    with st.spinner("Listening... Speak now!"):
+        with sr.Microphone() as source:
+            recognizer.adjust_for_ambient_noise(source)
+            audio = recognizer.listen(source)
+
+        try:
+            text = recognizer.recognize_google(audio)
+            st.success(f"✅ You said: **{text}**")
+            text_to_speech(f"You said: {text}")
+        except sr.UnknownValueError:
+            st.error("❌ Sorry, I couldn't understand the audio.")
+        except sr.RequestError:
+            st.error("🔌 Check your internet connection.")
+
+# File uploader (Optional: Upload MP3/WAV instead of using the mic)
+uploaded_file = st.file_uploader("Or Upload an Audio File (MP3, WAV)", type=["mp3", "wav"])
 
 if uploaded_file:
     with tempfile.NamedTemporaryFile(delete=False) as temp_audio:
         temp_audio.write(uploaded_file.read())
         temp_audio_path = temp_audio.name
 
-    # Convert MP3 to WAV (if needed)
+    # Convert MP3 to WAV if necessary
     audio = AudioSegment.from_file(temp_audio_path)
     wav_temp_path = temp_audio_path + ".wav"
     audio.export(wav_temp_path, format="wav")
@@ -54,6 +65,65 @@ if uploaded_file:
     # Cleanup temp files
     os.remove(temp_audio_path)
     os.remove(wav_temp_path)
+
+
+
+# import streamlit as st
+# import speech_recognition as sr
+# from gtts import gTTS
+# from pydub import AudioSegment
+# from pydub.playback import play
+# import tempfile
+# import os
+
+# # Tell pydub where to find FFmpeg
+# AudioSegment.converter = "/usr/bin/ffmpeg"
+
+# # Initialize recognizer
+# recognizer = sr.Recognizer()
+
+# # Function to convert text to speech
+# def text_to_speech(text):
+#     tts = gTTS(text=text, lang="en")
+#     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
+#         tts.save(fp.name)
+#         audio = AudioSegment.from_file(fp.name, format="mp3")
+#         play(audio)
+#         os.unlink(fp.name)
+
+# # Streamlit UI
+# st.title("🎤 Speech to Text Converter (Upload Audio)")
+
+# # File uploader
+# uploaded_file = st.file_uploader("Upload an audio file (MP3, WAV)", type=["mp3", "wav"])
+
+# if uploaded_file:
+#     with tempfile.NamedTemporaryFile(delete=False) as temp_audio:
+#         temp_audio.write(uploaded_file.read())
+#         temp_audio_path = temp_audio.name
+
+#     # Convert MP3 to WAV (if needed)
+#     audio = AudioSegment.from_file(temp_audio_path)
+#     wav_temp_path = temp_audio_path + ".wav"
+#     audio.export(wav_temp_path, format="wav")
+
+#     # Recognize speech from WAV file
+#     with sr.AudioFile(wav_temp_path) as source:
+#         st.write("🔍 Processing audio...")
+#         audio_data = recognizer.record(source)
+
+#         try:
+#             text = recognizer.recognize_google(audio_data)
+#             st.success(f"✅ You said: **{text}**")
+#             text_to_speech(f"You said: {text}")
+#         except sr.UnknownValueError:
+#             st.error("❌ Sorry, I couldn't understand the audio.")
+#         except sr.RequestError:
+#             st.error("🔌 Check your internet connection.")
+
+#     # Cleanup temp files
+#     os.remove(temp_audio_path)
+#     os.remove(wav_temp_path)
 
 
 # import streamlit as st
