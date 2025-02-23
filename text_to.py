@@ -19,7 +19,7 @@ def text_to_speech(text):
         os.unlink(fp.name)  # Delete temp file
 
 # Streamlit UI
-st.title("🎤 Speech to Text Converter (Upload Audio)")
+st.title("🎤 Speech to Text Converter by samad (Upload Audio)")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload an audio file (MP3, WAV)", type=["mp3", "wav"])
